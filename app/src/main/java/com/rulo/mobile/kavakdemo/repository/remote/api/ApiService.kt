@@ -1,6 +1,6 @@
-package com.rulo.mobile.kavakdemo.repository.remote
+package com.rulo.mobile.kavakdemo.repository.remote.api
 
-import com.rulo.mobile.kavakdemo.repository.remote.gnomes.GnomesResponse
+import com.rulo.mobile.kavakdemo.repository.remote.api.response.GnomesResponse
 import retrofit2.Call
 import retrofit2.http.GET
 

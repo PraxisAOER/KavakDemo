@@ -1,6 +1,7 @@
-package com.rulo.mobile.kavakdemo.repository.remote
+package com.rulo.mobile.kavakdemo.repository.remote.api
 
 import com.rulo.mobile.kavakdemo.BuildConfig
+import com.rulo.mobile.kavakdemo.repository.remote.HeaderInterceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -9,7 +10,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    val service: ApiService by lazy { buildRetrofit().create(ApiService::class.java) }
+    val service: ApiService by lazy { buildRetrofit()
+        .create(ApiService::class.java) }
 
     private fun buildRetrofit() = Retrofit.Builder()
         .baseUrl(BuildConfig.BASE_URL)
