@@ -7,14 +7,20 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.rulo.mobile.kavakdemo.repository.local.dao.GnomeDao
 import com.rulo.mobile.kavakdemo.repository.local.dao.GnomeFriendDao
+import com.rulo.mobile.kavakdemo.repository.local.dao.GnomeProfessionsDao
+import com.rulo.mobile.kavakdemo.repository.local.dao.ProfessionsCatalogDao
 import com.rulo.mobile.kavakdemo.repository.local.model.Gnome
 import com.rulo.mobile.kavakdemo.repository.local.model.GnomeFriend
+import com.rulo.mobile.kavakdemo.repository.local.model.GnomeProfessionsRelation
+import com.rulo.mobile.kavakdemo.repository.local.model.ProfessionsCatalogItem
 
-@Database(entities = [Gnome::class, GnomeFriend::class], version = 1)
+@Database(entities = [Gnome::class, GnomeFriend::class, ProfessionsCatalogItem::class, GnomeProfessionsRelation::class], version = 1)
 @TypeConverters(Converters::class)
 abstract class BrastlewarkDB : RoomDatabase() {
     abstract fun gnomeDao(): GnomeDao
     abstract fun gnomeFriendDao(): GnomeFriendDao
+    abstract fun professionsCatalogDao(): ProfessionsCatalogDao
+    abstract fun gnomeProfessionDao(): GnomeProfessionsDao
 
     companion object {
         private var INSTANCE: BrastlewarkDB? = null

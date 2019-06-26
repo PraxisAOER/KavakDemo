@@ -3,6 +3,7 @@ package com.rulo.mobile.kavakdemo.repository.local.database
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.util.*
 
 
 object Converters {
@@ -18,5 +19,15 @@ object Converters {
     fun fromArrayLisr(list: ArrayList<String>): String {
         val gson = Gson()
         return gson.toJson(list)
+    }
+
+    @TypeConverter
+    fun fromTimestamp(value: Long?): Date? {
+        return if (value == null) null else Date(value)
+    }
+
+    @TypeConverter
+    fun dateToTimestamp(date: Date?): Long? {
+        return (date?.time)
     }
 }

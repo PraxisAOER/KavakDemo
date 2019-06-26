@@ -11,7 +11,7 @@ interface GnomeFriendDao {
     @Delete
     fun delete(gnomeFriend: GnomeFriend)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insert(gnomeFriend: GnomeFriend)
 
     @Query("DELETE FROM gnomeFriends")
