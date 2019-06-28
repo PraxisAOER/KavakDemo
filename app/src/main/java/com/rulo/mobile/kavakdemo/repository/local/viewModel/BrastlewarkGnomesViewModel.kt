@@ -1,19 +1,16 @@
 package com.rulo.mobile.kavakdemo.repository.local.viewModel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.rulo.mobile.kavakdemo.repository.local.PreferencesHelper
 import com.rulo.mobile.kavakdemo.repository.local.database.BrastlewarkDB
 import com.rulo.mobile.kavakdemo.repository.local.model.GnomeFriend
 import com.rulo.mobile.kavakdemo.repository.local.model.GnomeProfessionsRelation
-import com.rulo.mobile.kavakdemo.repository.local.model.ProfessionsCatalogItem
 import com.rulo.mobile.kavakdemo.repository.remote.api.ApiClient
 import com.rulo.mobile.kavakdemo.repository.remote.api.response.GnomesResponse
 import com.rulo.mobile.kavakdemo.repository.remote.model.RemoteGnome
-import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import retrofit2.Call
@@ -70,65 +67,17 @@ class BrastlewarkGnomesViewModel(app: Application) : AndroidViewModel(app) {
                                                 }
                                             }
                                         }
-
-                                        //Professions
-                                        GlobalScope.async {
-                                            if (currentGnome.professions.isNotEmpty()) {
-                                                currentGnome.professions.map {
-
-                                                    Single.fromCallable {
-                                                        database.professionsCatalogDao().getProfessionByDescription(it)
-                                                    }.subscribeOn(Schedulers.io())
-                                                        .observeOn(AndroidSchedulers.mainThread())
-                                                        .subscribe { professionList ->
-                                                            if (professionList.isNotEmpty()) {
-                                                                Timber.wtf("Found $professionList")
-                                                            } else {
-                                                                Timber.wtf("Not found")
-                                                            }
-                                                        }
-
-
-                                                    if (!professionsMap.containsValue(it)) {
-
-                                                        Single.fromCallable {
-                                                            database.professionsCatalogDao()
-                                                                .insert(
-                                                                    ProfessionsCatalogItem(
-                                                                        description = it
-                                                                    )
-                                                                )
-                                                        }.subscribeOn(Schedulers.io())
-                                                            .observeOn(AndroidSchedulers.mainThread())
-                                                            .subscribe { newId -> Timber.wtf("Inserted $newId") }
-
-                                                        professionsMap[professionsMap.size + 1] = it
-                                                        val newInsertion = database.professionsCatalogDao()
-                                                            .insert(
-                                                                ProfessionsCatalogItem(
-                                                                    description = it
-                                                                )
-                                                            )
-                                                        Timber.wtf("Profession Inserted :$newInsertion")
-                                                        database.gnomeProfessionDao().insertAll(
-                                                            GnomeProfessionsRelation(
-                                                                gnomeId = currentGnome.id,
-                                                                professionId = professionsMap.size
-                                                            )
-                                                        )
-                                                    } else {
-                                                        database.gnomeProfessionDao().insertAll(
-                                                            GnomeProfessionsRelation(
-                                                                gnomeId = currentGnome.id,
-                                                                professionId = professionsMap.entries.single { x -> x.value == it }.key
-                                                            )
-                                                        )
-
-                                                    }
-                                                }
-                                            }
-                                        }
                                     }
+                                }
+
+                                //GettingProperties
+                                GlobalScope.async {
+                                    val professions = remoteGnomesList
+                                        .asSequence()
+                                        .filter { x -> x.professions.isNotEmpty() }
+                                        .map { it.professions }.flatten().distinct().sortedDescending()
+                                        .toList()
+                                    Timber.wtf(professions.toString())
                                 }
                             }
                         }
@@ -136,6 +85,14 @@ class BrastlewarkGnomesViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
             })
+        }
+    }
+
+    fun insertRelation(rel: GnomeProfessionsRelation) {
+        GlobalScope.async {
+            database.gnomeProfessionDao().insertAll(
+                rel
+            )
         }
     }
 
