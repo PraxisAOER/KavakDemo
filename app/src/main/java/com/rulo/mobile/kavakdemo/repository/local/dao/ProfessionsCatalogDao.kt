@@ -15,6 +15,9 @@ interface ProfessionsCatalogDao {
     @Query("SELECT * from cat_professions WHERE description= :description")
     fun getProfessionByDescription(description: String): List<ProfessionsCatalogItem>
 
+    @Query("SELECT id from cat_professions WHERE description= :description")
+    fun getProfessionIdByDescription(description: String): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(vararg profession: ProfessionsCatalogItem)
 

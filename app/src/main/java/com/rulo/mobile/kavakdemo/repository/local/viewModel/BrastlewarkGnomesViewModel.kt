@@ -1,16 +1,19 @@
 package com.rulo.mobile.kavakdemo.repository.local.viewModel
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.rulo.mobile.kavakdemo.repository.local.PreferencesHelper
 import com.rulo.mobile.kavakdemo.repository.local.database.BrastlewarkDB
 import com.rulo.mobile.kavakdemo.repository.local.model.GnomeFriend
 import com.rulo.mobile.kavakdemo.repository.local.model.GnomeProfessionsRelation
+import com.rulo.mobile.kavakdemo.repository.local.model.ProfessionsCatalogItem
 import com.rulo.mobile.kavakdemo.repository.remote.api.ApiClient
 import com.rulo.mobile.kavakdemo.repository.remote.api.response.GnomesResponse
 import com.rulo.mobile.kavakdemo.repository.remote.model.RemoteGnome
+import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import retrofit2.Call
@@ -43,10 +46,8 @@ class BrastlewarkGnomesViewModel(app: Application) : AndroidViewModel(app) {
                             if (remoteGnomesList.isNotEmpty()) {
                                 //Inserting gnomes
                                 GlobalScope.async {
-                                    val professionsMap = HashMap<Int, String>()
-                                    val professionsRel = HashMap<Int, Int>()
                                     database.gnomeFriendDao().clearAll()
-                                    database.professionsCatalogDao().clearAll()
+                                    database.gnomeProfessionDao().clearAll()
                                     remoteGnomesList.map { currentGnome ->
                                         //  Timber.wtf(currentGnome.toString())
                                         database.gnomeDao().insertAll(currentGnome.toLocalGnome())
@@ -70,14 +71,51 @@ class BrastlewarkGnomesViewModel(app: Application) : AndroidViewModel(app) {
                                     }
                                 }
 
-                                //GettingProperties
+                                //Getting Professions
                                 GlobalScope.async {
-                                    val professions = remoteGnomesList
+
+                                    //Filter gnomes who has professions
+                                    val gnomesWithProfessions = remoteGnomesList
                                         .asSequence()
                                         .filter { x -> x.professions.isNotEmpty() }
-                                        .map { it.professions }.flatten().distinct().sortedDescending()
-                                        .toList()
-                                    Timber.wtf(professions.toString())
+
+                                    //Get all professions
+                                    val professionsMap = gnomesWithProfessions.map { it.professions }
+                                        .flatten()
+                                        .distinct()
+                                        .sorted().toHashSet()
+
+
+                                    professionsMap.forEach { profession ->
+                                        val thisProffesionList = gnomesWithProfessions
+                                            .filter { x -> x.professions.contains(profession) }
+                                            .map { it.id }
+                                            .toList()
+
+                                        with(
+                                            database.professionsCatalogDao().getProfessionIdByDescription(profession)
+                                        ) {
+                                            if (this.isNotEmpty()) {
+                                                createRelations(this.first().toInt(), thisProffesionList)
+                                            } else {
+                                                //Inserting profession
+                                                Single.fromCallable {
+                                                    database.professionsCatalogDao()
+                                                        .insert(ProfessionsCatalogItem(description = profession))
+                                                }
+                                                    .observeOn(AndroidSchedulers.mainThread())
+                                                    .subscribeOn(Schedulers.io())
+                                                    .subscribe { insertedProfession ->
+                                                        Timber.wtf("Profession inserted with id $insertedProfession")
+                                                        createRelations(insertedProfession.toInt(), thisProffesionList)
+                                                    }
+                                            }
+
+                                        }
+
+                                    }
+
+
                                 }
                             }
                         }
@@ -88,11 +126,9 @@ class BrastlewarkGnomesViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun insertRelation(rel: GnomeProfessionsRelation) {
-        GlobalScope.async {
-            database.gnomeProfessionDao().insertAll(
-                rel
-            )
+    fun createRelations(professionId: Int, gnomesList: List<Int>) {
+        gnomesList.map {
+            database.gnomeProfessionDao().insertAll(GnomeProfessionsRelation(gnomeId = it, professionId = professionId))
         }
     }
 
